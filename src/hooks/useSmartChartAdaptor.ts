@@ -3,8 +3,6 @@ import { buildSmartchartsChampionAdapter } from '@/adapters/smartcharts-champion
 import { createServices } from '@/adapters/smartcharts-champion/services';
 import { createTransport } from '@/adapters/smartcharts-champion/transport';
 import chart_api from '@/external/bot-skeleton/services/api/chart-api';
-import ApiHelpers from '@/external/bot-skeleton/services/api/api-helpers';
-import { useStore } from '@/hooks/useStore';
 import type { SmartchartsChampionAdapter } from '@/types/smartchart.types';
 import type {
     ActiveSymbols,
@@ -48,7 +46,6 @@ interface UseSmartChartAdaptorReturn {
  * with proper memoization and memory leak prevention
  */
 export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
-    const { common } = useStore();
     // State management
     const [adapter, setAdapter] = useState<SmartchartsChampionAdapter | null>(null);
     const [adapterInitialized, setAdapterInitialized] = useState(false);
@@ -90,15 +87,12 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
         const tryInit = () => {
             if (!chart_api.api) return false;
             try {
-                // ApiHelpers is a separate singleton (used internally by services.ts
-                // for getActiveSymbols/getTradingTimes) that only ever gets initialized
-                // inside app-store.ts's Blockly/bot-workspace bootstrap in the full app.
-                // This standalone chart extraction has no Blockly context, so nobody
-                // ever called setInstance - it only needs { ws, server_time } though,
-                // not Blockly, so we can initialize it here directly.
-                if (!ApiHelpers.instance) {
-                    ApiHelpers.setInstance({ ws: chart_api.api, server_time: common.server_time });
-                }
+                // NOTE: this used to call ApiHelpers.setInstance() here, which doesn't
+                // exist on this repo's ApiHelpers stub. That threw synchronously, was
+                // caught below with no console output, and permanently stopped this
+                // poll (tryInit always returns true) - the actual root cause of the
+                // blank canvas. services.ts now reads active_symbols/trading_times
+                // directly from api_base instead, so ApiHelpers isn't needed at all.
                 const transport = createTransport();
                 const services = createServices();
                 const championAdapter = buildSmartchartsChampionAdapter(transport, services, {
@@ -112,6 +106,7 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
                     setError(null);
                 }
             } catch (err) {
+                logger.error('Adapter init failed:', err);
                 if (isMountedRef.current) {
                     setError(err instanceof Error ? err : new Error('Failed to initialize adapter'));
                     setIsLoading(false);

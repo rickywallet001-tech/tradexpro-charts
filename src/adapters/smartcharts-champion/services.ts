@@ -106,7 +106,12 @@ export function createServices(): TServices {
                 const flattened = flattenTradingTimes(raw);
 
                 if (Object.keys(flattened).length === 0) {
-                    logger.warn('Trading times flattened to an empty map - check raw shape from tradingTimesService');
+                    // TEMP DEBUG - remove once shape is confirmed
+                    logger.warn(
+                        'Trading times flattened to an empty map. Raw markets[0]:',
+                        JSON.stringify(raw?.markets?.[0], null, 2)?.slice(0, 3000)
+                    );
+                    logger.warn('Raw top-level keys:', raw ? Object.keys(raw) : 'raw is falsy');
                 }
 
                 return flattened;

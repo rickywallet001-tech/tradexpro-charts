@@ -68,6 +68,12 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
         setIsSafari(isSafariBrowser());
     });
 
+    // TEMP DEBUG - remove once resolved
+    console.log('[Chart DEBUG] render', { symbol, adapterInitialized, has_chart_store: !!chart_store });
+
+    // TEMP DEBUG - remove once resolved
+    console.log('[Chart DEBUG] render', { symbol, adapterInitialized, has_chart_store: !!chart_store });
+
     if (!symbol || !adapterInitialized) return null;
 
     return (

@@ -44,7 +44,7 @@ function flattenTradingTimes(raw: any): Record<string, { open: string[]; close: 
     raw.markets.forEach((market: any) => {
         market.submarkets?.forEach((submarket: any) => {
             submarket.symbols?.forEach((symbolData: any) => {
-                const symbolCode = symbolData.symbol;
+                const symbolCode = symbolData.underlying_symbol || symbolData.symbol;
                 if (!symbolCode) return;
 
                 const times = symbolData.times;
@@ -106,11 +106,7 @@ export function createServices(): TServices {
                 const flattened = flattenTradingTimes(raw);
 
                 if (Object.keys(flattened).length === 0) {
-                    // TEMP DEBUG - remove once shape is confirmed
-                    const marketsCount = Array.isArray(raw?.markets) ? raw.markets.length : 'not an array';
-                    const firstSymbol = raw?.markets?.[0]?.submarkets?.[0]?.symbols?.[0];
-                    logger.warn('Trading times flattened to an empty map. markets.length:', marketsCount);
-                    logger.warn('First symbol object seen:', JSON.stringify(firstSymbol));
+                    logger.warn('Trading times flattened to an empty map - check raw shape from tradingTimesService');
                 }
 
                 return flattened;

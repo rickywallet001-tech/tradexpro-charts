@@ -88,8 +88,8 @@
   "platform": {
     "derivws": {
       "url": {
-        "production": "https://api.derivws.com/trading/v1/",
-        "staging": "https://api.derivws.com/trading/v1/"
+        "production": "wss://api.derivws.com/trading/v1/",
+        "staging": "wss://api.derivws.com/trading/v1/"
       },
       "directories": {
         "options": "options/"

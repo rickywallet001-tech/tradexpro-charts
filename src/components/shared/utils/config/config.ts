@@ -446,15 +446,18 @@ export const isLocal = () => /localhost(:\d+)?$/i.test(window.location.hostname)
 
 const getDefaultServerURL = () => {
     const isProductionEnv = isProduction();
+    const { appId } = getDomainConfig();
 
     try {
-        return isProductionEnv ? WS_SERVERS.PRODUCTION : WS_SERVERS.STAGING;
+        const base = isProductionEnv ? WS_SERVERS.PRODUCTION : WS_SERVERS.STAGING;
+        return `${base}?app_id=${encodeURIComponent(appId)}`;
     } catch (error) {
         console.error('Error in getDefaultServerURL:', error);
     }
 
     // Production defaults to demov2, staging/preview defaults to qa194 (demo)
-    return isProductionEnv ? WS_SERVERS.PRODUCTION : WS_SERVERS.STAGING;
+    const base = isProductionEnv ? WS_SERVERS.PRODUCTION : WS_SERVERS.STAGING;
+    return `${base}?app_id=${encodeURIComponent(appId)}`;
 };
 
 const getLegacyServerURL = () => {

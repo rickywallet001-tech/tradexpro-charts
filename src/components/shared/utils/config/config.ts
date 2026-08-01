@@ -173,6 +173,29 @@ const createHostedDomainEntries = ({
 };
 
 export const DOMAIN_CONFIG: Record<string, DomainConfig> = {
+    // ── TradeX PRO Charts subdomain ───────────────────────────────────────────
+    // Receives auth via postMessage from tradexpro.co.ke parent shell.
+    // Must be listed here so isProduction() returns true and getDefaultServerURL()
+    // points at the correct production WS endpoint instead of falling through to
+    // the unauthenticated public default.
+    ...createHostedDomainEntries({
+        primaryDomain: 'charts.tradexpro.co.ke',
+        clientId: '33ughhvgtxloGWBQQZEeD',
+        appId: '33ughhvgtxloGWBQQZEeD',
+        redirectUri: 'https://tradexpro.co.ke/callback',
+        botsFolder: 'tradexpro.co.ke',
+        includeLegacyAppIdInOAuth: true,
+        useLegacyOAuthLogin: false,
+        features: {
+            botIdeas: false,
+            printPopups: false,
+            autoTrades: false,
+            manualTrading: false,
+            scanner: false,
+            chart: true,
+        },
+        ui: { brandName: 'TradeX PRO Charts' },
+    }),
     // ── Primary production domain ────────────────────────────────────────────
     // New OAuth app registered redirect: https://riskmanagers.site/ (trailing slash)
     ...createHostedDomainEntries({

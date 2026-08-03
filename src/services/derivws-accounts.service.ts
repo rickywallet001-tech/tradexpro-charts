@@ -57,7 +57,7 @@ export class DerivWSAccountsService {
      */
     private static getDerivWSBaseURL(): string {
         const environment = isProduction() ? 'production' : 'staging';
-        return brandConfig.platform.derivws.url[environment];
+        return brandConfig.platform.derivws.api_url[environment];
     }
 
     /**

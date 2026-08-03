@@ -5,10 +5,22 @@ import App from './App';
 // ── TradeX PRO shell auth bridge ───────────────────────────────────────────
 // The Charts page on tradexpro.co.ke embeds this app as an iframe. The shell
 // sends a TRADEXPRO_AUTH postMessage (same protocol as dtrader-template) with
-// the logged-in user's token, loginid, and accounts list. We map those to the
-// storage keys that getSocketURL() in config.ts actually reads, so the chart
-// boots authenticated instead of falling through to the public unauthenticated
-// WebSocket path.
+// the logged-in user's token and loginid.
+//
+// getSocketURL() in config.ts checks two auth formats, in this order:
+//  1. PKCE: sessionStorage['auth_info'].access_token -> fetches an
+//     OTP-signed WebSocket URL (DerivWSAccountsService). This is the path
+//     that actually works with tradexpro's OAuth token.
+//  2. Legacy: localStorage['accountsList'] + ['active_loginid'] -> connects
+//     to the classic wss://ws.derivws.com/websockets/v3 endpoint and calls
+//     api.authorize(token) directly. Confirmed via live console: this
+//     rejects tradexpro's OAuth token outright ("HTTP Authentication
+//     failed; no valid credentials available"), repeatedly, before
+//     eventually falling back to the public/unauthenticated connection.
+//
+// Originally wrote the legacy format only, which is exactly why this kept
+// failing. Writing the PKCE format instead routes through the path that
+// actually works.
 const ALLOWED_PARENT_ORIGIN = 'https://tradexpro.co.ke';
 
 function handleShellAuth(event: MessageEvent) {
@@ -16,29 +28,29 @@ function handleShellAuth(event: MessageEvent) {
     const data = event.data;
     if (!data || data.type !== 'TRADEXPRO_AUTH') return;
 
-    const { token, loginid, accounts } = data as {
+    const { token, loginid } = data as {
         type: string;
         token: string;
         loginid: string;
-        accounts: Array<{ account: string; token: string; currency: string }>;
+        accounts?: Array<{ account: string; token: string; currency: string }>;
     };
 
     if (!token || !loginid) return;
 
-    // Map TradeX PRO's auth keys to what getSocketURL() looks for:
-    // - accountsList: keyed by loginid, each entry has a token field
-    // - active_loginid: the currently selected account
-    const accountsList: Record<string, { token: string; currency: string }> = {};
-    (accounts ?? []).forEach(acct => {
-        accountsList[acct.account] = { token: acct.token, currency: acct.currency ?? '' };
-    });
-    // Always include the active account in case accounts array is sparse
-    if (!accountsList[loginid]) {
-        accountsList[loginid] = { token, currency: '' };
-    }
-
     try {
-        localStorage.setItem('accountsList', JSON.stringify(accountsList));
+        sessionStorage.setItem(
+            'auth_info',
+            JSON.stringify({
+                access_token: token,
+                token_type: 'Bearer',
+                expires_in: 3600,
+                expires_at: Date.now() + 3600 * 1000,
+            })
+        );
+        // getAuthenticatedWebSocketURL() honours this for account selection
+        // (falls back to accounts[0] if absent), and fetches the accounts
+        // list itself via the access_token if not already cached -- no need
+        // to duplicate that list here ourselves.
         localStorage.setItem('active_loginid', loginid);
     } catch {
         // Ignore storage errors (private-browsing, quota exceeded, etc.)
